@@ -6,7 +6,6 @@ var reg = process.env.REGION;
 
 // const connectionString = 'postgresql://postgres:secret@10.80.1.121:5432/apid'
 const connectionString = db_host;
-                      
 function DateFunction(){
     var today = new Date();
     var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
@@ -38,6 +37,7 @@ let url = ""
 let data = []
 var len=0;
 exports.myhandler = async function abc(){
+    console.log(typeof reg)
     var res1 = await client.query("SELECT drug_id FROM shuffle_drugs where flag = 'pending' and region = '"+reg+"'");
     for(var i=0; i< res1.rows.length ; i++){
         for(var j=0; j < res1.rows[i].drug_id.length; j++){
@@ -48,7 +48,7 @@ exports.myhandler = async function abc(){
     }
     len = listDrugs.length;
     console.log(listDrugs)
-   // const a = len;
+  // const a = len;
     for(let k=0; k < len; k++){
         //console.log("listdrugs2:"+k)
         //if(k<=len){
@@ -60,11 +60,22 @@ exports.myhandler = async function abc(){
             .then(async function (response) {
                 //console.log(url)
                 let jsondata = JSON.parse(response);
-                pricingData1.price = jsondata.priceList[0].formattedDiscountPrice;
-                pricingData1.price = parseFloat(pricingData1.price.replace('$', ''));
-                pricingData1.pharmacy = jsondata.priceList[0].pharmacy.pharmacyName;
+                var lowestPrice =  parseFloat(jsondata.priceList[0].formattedDiscountPrice.replace('$','') );
+                var lowestPharmacy=jsondata.priceList[0].pharmacy.name;
+                jsondata.prices.forEach(function(value){
+                    if(value!= null){
+                        var valPrice = parseFloat(value.formattedDiscountPrice.replace('$',''))
+                        if(lowestPrice > valPrice){
+                            lowestPrice =  valPrice;
+                            lowestPharmacy=value.pharmacy.pharmacyName;
+                        }
+                       
+                    }
+                });
+                pricingData1.price = lowestPrice
+                pricingData1.pharmacy = lowestPharmacy;
                 //console.log("price="+pricingData1.price);
-                const query2 = 'INSERT INTO public_price(average_price, createdat, difference, drug_details_id, lowest_market_price, pharmacy, price, program_id, recommended_price) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *';
+                const query2 = "INSERT INTO publicprice(average_price, createdat, difference, drug_details_id, lowest_market_price, pharmacy, price, program_id, recommended_price) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *";
                 const values = [pricingData1.average_price, pricingData1.createdat, pricingData1.difference, drugUrlList.rows[0].drug_id, pricingData1.lowest_market_price,pricingData1.pharmacy,pricingData1.price,pricingData1.program_id,pricingData1.recommended_price];
                 await client.query(query2, values)
                     .then(res => {
@@ -77,4 +88,4 @@ exports.myhandler = async function abc(){
         }else{continue}
     }
 }
-//exports.myhandler();
+// //exports.myhandler();
