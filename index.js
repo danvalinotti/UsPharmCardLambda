@@ -62,7 +62,7 @@ exports.myhandler = async function abc(){
                 let jsondata = JSON.parse(response);
                 var lowestPrice =  parseFloat(jsondata.priceList[0].formattedDiscountPrice.replace('$','') );
                 var lowestPharmacy=jsondata.priceList[0].pharmacy.name;
-                jsondata.prices.forEach(function(value){
+                jsondata.priceList.forEach(function(value){
                     if(value!= null){
                         var valPrice = parseFloat(value.formattedDiscountPrice.replace('$',''))
                         if(lowestPrice > valPrice){
